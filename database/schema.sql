@@ -83,3 +83,34 @@ CREATE POLICY "Allow all operations on chat_threads" ON chat_threads FOR ALL USI
 CREATE POLICY "Allow all operations on chat_messages" ON chat_messages FOR ALL USING (true);
 CREATE POLICY "Allow all operations on nutrition_entries" ON nutrition_entries FOR ALL USING (true);
 
+-- Simplified Strava Configuration (single user)
+CREATE TABLE IF NOT EXISTS strava_config (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  access_token TEXT NOT NULL,
+  refresh_token TEXT NOT NULL,
+  expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  athlete_data JSONB,
+  last_sync TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Simple constraint - only one config row allowed
+CREATE UNIQUE INDEX IF NOT EXISTS idx_strava_config_singleton ON strava_config ((1));
+
+-- Add strava_id to activities table directly (no separate mapping table needed)
+DO $$ 
+BEGIN
+  -- Add strava_id column to activities if it doesn't exist
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'activities' AND column_name = 'strava_id') THEN
+    ALTER TABLE activities ADD COLUMN strava_id BIGINT UNIQUE;
+  END IF;
+END $$;
+
+-- Index for strava_id lookups
+CREATE INDEX IF NOT EXISTS idx_activities_strava_id ON activities(strava_id);
+
+-- RLS policy for strava_config
+ALTER TABLE strava_config ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all operations on strava_config" ON strava_config FOR ALL USING (true);
+

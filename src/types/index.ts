@@ -19,6 +19,7 @@ export interface Activity {
   title: string
   icon_name: string
   activity_type?: string
+  strava_id?: number
   data?: Record<string, any>
   created_at?: string
 }
