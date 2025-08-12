@@ -4,12 +4,12 @@ import type { Goal, Activity, DailyNutrition } from '@/types'
 // Tool definitions for OpenAI function calling
 export const toolDefs = [
   {
-    type: 'function',
+    type: 'function' as const,
     function: {
       name: 'fetch_goals',
       description: 'Fetch all goals from the database',
       parameters: {
-        type: 'object',
+        type: 'object' as const,
         properties: {
           limit: {
             type: 'number',
@@ -21,12 +21,12 @@ export const toolDefs = [
     }
   },
   {
-    type: 'function',
+    type: 'function' as const,
     function: {
       name: 'create_goal',
       description: 'Create a new goal',
       parameters: {
-        type: 'object',
+        type: 'object' as const,
         properties: {
           name: { type: 'string', description: 'Goal name' },
           milestone_description: { type: 'string', description: 'What milestone to achieve' },
@@ -40,12 +40,12 @@ export const toolDefs = [
     }
   },
   {
-    type: 'function',
+    type: 'function' as const,
     function: {
       name: 'fetch_activities',
       description: 'Fetch activities, optionally filtered by goal',
       parameters: {
-        type: 'object',
+        type: 'object' as const,
         properties: {
           goal_id: { type: 'string', description: 'Filter by specific goal ID' },
           limit: { type: 'number', description: 'Maximum number of activities to fetch', default: 20 },
@@ -55,12 +55,12 @@ export const toolDefs = [
     }
   },
   {
-    type: 'function',
+    type: 'function' as const,
     function: {
       name: 'log_activity',
       description: 'Log a new activity',
       parameters: {
-        type: 'object',
+        type: 'object' as const,
         properties: {
           title: { type: 'string', description: 'Activity title' },
           icon_name: { type: 'string', description: 'System icon name' },
@@ -73,12 +73,12 @@ export const toolDefs = [
     }
   },
   {
-    type: 'function',
+    type: 'function' as const,
     function: {
       name: 'fetch_daily_nutrition',
       description: 'Fetch daily nutrition data',
       parameters: {
-        type: 'object',
+        type: 'object' as const,
         properties: {
           date: { type: 'string', description: 'Specific date (YYYY-MM-DD) or leave empty for recent days' },
           limit: { type: 'number', description: 'Number of days to fetch', default: 7 }
@@ -87,12 +87,12 @@ export const toolDefs = [
     }
   },
   {
-    type: 'function',
+    type: 'function' as const,
     function: {
       name: 'get_current_time',
       description: 'Get the current date and time',
       parameters: {
-        type: 'object',
+        type: 'object' as const,
         properties: {}
       }
     }

@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase/client'
 import { toolDefs, tools } from '@/tools/index'
 import { BrockMemorySystem } from '@/lib/memory'
 import { errorResponse } from '@/lib/utils/response'
+import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions'
 
 export const runtime = 'edge'
 
@@ -50,7 +51,7 @@ export async function POST(req: NextRequest) {
       })
 
     // Prepare messages for OpenAI
-    const messages = [
+    const messages: ChatCompletionMessageParam[] = [
       { role: 'system', content: systemPrompt },
       // Include recent context messages
       ...context.recent_messages.map(msg => ({
