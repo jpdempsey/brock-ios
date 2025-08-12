@@ -116,12 +116,15 @@ export async function POST(req: NextRequest) {
               const toolResults: any[] = []
               
               for (const toolCall of toolCalls) {
-                if (toolCall.function.name && tools[toolCall.function.name]) {
-                  sendSSE('tool_start', { name: toolCall.function.name })
+                const toolName = toolCall.function.name
+                const toolFunction = toolName ? tools[toolName as keyof typeof tools] : undefined
+                
+                if (toolName && toolFunction) {
+                  sendSSE('tool_start', { name: toolName })
                   
                   try {
                     const args = JSON.parse(toolCall.function.arguments)
-                    const result = await tools[toolCall.function.name](args)
+                    const result = await toolFunction(args)
                     sendSSE('tool_result', { name: toolCall.function.name, result })
                     
                     // Store tool result for second OpenAI call
