@@ -1,0 +1,33 @@
+# Next.js build output
+.next/
+out/
+
+# Node modules
+node_modules/
+
+# Environment variables
+.env.local
+.env.*.local
+.env
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Editor/IDE specific files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Misc
+*.log
+*.zip
+*.rar
+*.7z
