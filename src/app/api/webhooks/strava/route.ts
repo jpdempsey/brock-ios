@@ -101,6 +101,7 @@ async function handleActivityCreate(stravaActivityId: number) {
       icon_name: mapStravaTypeToIcon(stravaActivity.sport_type),
       activity_type: 'strava',
       strava_id: stravaActivity.id,
+      created_at: stravaActivity.start_date_local, // Use actual activity date
       data: {
         sport_type: stravaActivity.sport_type,
         start_date: stravaActivity.start_date,
@@ -162,6 +163,7 @@ async function handleActivityUpdate(stravaActivityId: number) {
     const activityData = {
       title: stravaActivity.name,
       icon_name: mapStravaTypeToIcon(stravaActivity.sport_type),
+      created_at: stravaActivity.start_date_local, // Use actual activity date
       data: {
         sport_type: stravaActivity.sport_type,
         start_date: stravaActivity.start_date,

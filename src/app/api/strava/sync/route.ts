@@ -141,6 +141,7 @@ async function syncSingleActivity(stravaActivity: any, force: boolean) {
     icon_name: mapStravaTypeToIcon(stravaActivity.sport_type),
     activity_type: 'strava',
     strava_id: stravaActivity.id, // Store strava_id directly in activities table
+    created_at: stravaActivity.start_date_local, // Use actual activity date, not sync date
     data: {
       sport_type: stravaActivity.sport_type,
       start_date: stravaActivity.start_date,
