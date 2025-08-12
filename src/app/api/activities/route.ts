@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase/client'
 import { successResponse, errorResponse, handleAPIError } from '@/lib/utils/response'
 import type { Activity } from '@/types'
 
-export const runtime = 'edge'
+// Removed edge runtime for consistency
 
 // GET /api/activities - Fetch all activities
 export async function GET(request: NextRequest) {
