@@ -158,7 +158,6 @@ export async function PUT(request: NextRequest) {
       return errorResponse('status must be delivered, read, or expired', 400)
     }
 
-    let query = supabase.from('notification_queue')
     let updateData: any = { status }
 
     // Set timestamp based on status
@@ -170,17 +169,25 @@ export async function PUT(request: NextRequest) {
       updateData.read_at = new Date().toISOString()
     }
 
+    let query
+
     if (markAllAsRead) {
       // Mark all pending notifications as read
-      query = query.eq('status', 'pending')
+      query = supabase
+        .from('notification_queue')
+        .update(updateData)
+        .eq('status', 'pending')
+        .select('id, type, title, status')
     } else {
       // Mark specific notifications
-      query = query.in('id', notificationIds)
+      query = supabase
+        .from('notification_queue')
+        .update(updateData)
+        .in('id', notificationIds)
+        .select('id, type, title, status')
     }
 
     const { data, error } = await query
-      .update(updateData)
-      .select('id, type, title, status')
 
     if (error) {
       return errorResponse(`Failed to update notifications: ${error.message}`, 500)
