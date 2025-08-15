@@ -4,29 +4,89 @@ import { successResponse, errorResponse, handleAPIError } from '@/lib/utils/resp
 
 export const runtime = 'edge'
 
-// GET /api/checkins/check-time - Test endpoint (shows current time and schedule info)
+// GET /api/checkins/check-time - Check if it's time for a proactive check-in (Vercel cron: every 15 minutes)
 export async function GET() {
   try {
+    // Get current date and time in ET timezone
     const now = new Date()
     const etDateTime = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}))
-    const dateString = etDateTime.toISOString().split('T')[0]
-    const currentTime = etDateTime.toTimeString().split(' ')[0]
+    const dateString = etDateTime.toISOString().split('T')[0] // YYYY-MM-DD
+    const currentTime = etDateTime.toTimeString().split(' ')[0] // HH:MM:SS
+
+    console.log(`🕐 Checking time: ${dateString} ${currentTime} ET`)
 
     // Get today's schedule
-    const { data: schedule } = await supabase
+    const { data: schedule, error } = await supabase
       .from('daily_checkin_schedule')
       .select('*')
       .eq('date', dateString)
       .single()
 
+    if (error || !schedule) {
+      console.log(`⚠️ No schedule found for ${dateString}`)
+      return successResponse({ message: 'No schedule found for today', date: dateString })
+    }
+
+    let messagesSent = 0
+    const results = []
+
+    // Check morning time
+    if (!schedule.morning_sent && isTimeForCheckin(currentTime, schedule.morning_time)) {
+      console.log(`🌅 Time for morning check-in! (${schedule.morning_time})`)
+      
+      const result = await sendProactiveMessage('morning')
+      if (result.success) {
+        // Mark morning as sent
+        await supabase
+          .from('daily_checkin_schedule')
+          .update({ morning_sent: true })
+          .eq('id', schedule.id)
+        
+        messagesSent++
+        results.push({ type: 'morning', sent: true, time: schedule.morning_time })
+      } else {
+        results.push({ type: 'morning', sent: false, error: result.error })
+      }
+    }
+
+    // Check afternoon time
+    if (!schedule.afternoon_sent && isTimeForCheckin(currentTime, schedule.afternoon_time)) {
+      console.log(`🌇 Time for afternoon check-in! (${schedule.afternoon_time})`)
+      
+      const result = await sendProactiveMessage('afternoon')
+      if (result.success) {
+        // Mark afternoon as sent
+        await supabase
+          .from('daily_checkin_schedule')
+          .update({ afternoon_sent: true })
+          .eq('id', schedule.id)
+        
+        messagesSent++
+        results.push({ type: 'afternoon', sent: true, time: schedule.afternoon_time })
+      } else {
+        results.push({ type: 'afternoon', sent: false, error: result.error })
+      }
+    }
+
+    if (messagesSent > 0) {
+      console.log(`✅ Sent ${messagesSent} proactive check-in message(s)`)
+    }
+
     return successResponse({
-      message: 'Time checking endpoint (use POST to actually check)',
-      currentDate: dateString,
-      currentTimeET: currentTime,
-      schedule: schedule || null,
-      note: 'Use POST with Authorization header to perform time check'
+      message: `Checked time for ${dateString}`,
+      currentTime,
+      schedule: {
+        morning_time: schedule.morning_time,
+        afternoon_time: schedule.afternoon_time,
+        morning_sent: schedule.morning_sent,
+        afternoon_sent: schedule.afternoon_sent
+      },
+      results,
+      messagesSent
     })
+
   } catch (error) {
+    console.error('Error in check-time:', error)
     return handleAPIError(error)
   }
 }
