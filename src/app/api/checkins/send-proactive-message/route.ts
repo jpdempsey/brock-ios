@@ -2,7 +2,6 @@ import { NextRequest } from 'next/server'
 import { supabase } from '@/lib/supabase/client'
 import { openai } from '@/lib/openai/client'
 import { BrockMemorySystem } from '@/lib/memory'
-import { apnsClient } from '@/lib/apns/client'
 import { successResponse, errorResponse, handleAPIError } from '@/lib/utils/response'
 
 export const runtime = 'edge'
@@ -67,19 +66,14 @@ export async function POST(request: NextRequest) {
       .update({ updated_at: new Date().toISOString() })
       .eq('id', threadId)
 
-    // Send push notification to all registered devices
-    const notificationResult = await sendPushNotification(threadId, message, timeOfDay)
-
     console.log(`✅ Sent proactive ${timeOfDay} check-in message to thread ${threadId}`)
     console.log(`📝 Message: ${message.substring(0, 100)}...`)
-    console.log(`📱 Push notification result: ${notificationResult.success ? 'sent' : 'failed'}`)
 
     return successResponse({
       message: 'Proactive check-in message sent successfully',
       threadId,
       timeOfDay,
-      content: message,
-      pushNotification: notificationResult
+      content: message
     })
 
   } catch (error) {
