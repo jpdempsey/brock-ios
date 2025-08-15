@@ -118,7 +118,7 @@ export async function GET(request: NextRequest) {
         expires_at
       `)
       .eq('status', status)
-      .lt('expires_at', new Date().toISOString()) // Not expired
+      .gt('expires_at', new Date().toISOString()) // Not expired
       .order('priority', { ascending: true }) // Higher priority first
       .order('created_at', { ascending: true }) // Older first within same priority
       .limit(limit)
