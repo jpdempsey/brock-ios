@@ -161,30 +161,48 @@ BEGIN
   END IF;
 END $$;
 
--- Device tokens for Apple Push Notifications (APNs)
-CREATE TABLE IF NOT EXISTS device_tokens (
+-- Notification Queue System
+CREATE TABLE IF NOT EXISTS notification_queue (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  device_token TEXT NOT NULL UNIQUE,
-  user_id TEXT DEFAULT 'default_user',
-  platform TEXT NOT NULL DEFAULT 'ios', -- 'ios' or 'android'
-  device_info JSONB DEFAULT '{}', -- Device model, OS version, etc.
-  registered_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  last_used_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  is_active BOOLEAN DEFAULT TRUE,
-  UNIQUE(device_token)
+  type TEXT NOT NULL, -- 'chat_message', 'account_update', 'proactive_checkin', 'system', 'goal_reminder', etc.
+  title TEXT NOT NULL,
+  message TEXT NOT NULL,
+  
+  -- Related data (optional, depending on notification type)
+  thread_id UUID REFERENCES chat_threads(id) ON DELETE CASCADE,
+  goal_id UUID REFERENCES goals(id) ON DELETE CASCADE,
+  activity_id UUID REFERENCES activities(id) ON DELETE CASCADE,
+  
+  -- Notification metadata
+  priority INTEGER DEFAULT 5, -- 1=highest, 10=lowest
+  data JSONB DEFAULT '{}', -- Additional custom data
+  
+  -- Status tracking
+  status TEXT DEFAULT 'pending', -- 'pending', 'delivered', 'read', 'expired'
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  delivered_at TIMESTAMP WITH TIME ZONE,
+  read_at TIMESTAMP WITH TIME ZONE,
+  expires_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() + INTERVAL '7 days'), -- Auto-expire old notifications
+  
+  -- Delivery attempts (for future retry logic)
+  delivery_attempts INTEGER DEFAULT 0,
+  last_attempt_at TIMESTAMP WITH TIME ZONE
 );
 
--- Indexes for device tokens
-CREATE INDEX IF NOT EXISTS idx_device_tokens_user_id ON device_tokens(user_id);
-CREATE INDEX IF NOT EXISTS idx_device_tokens_is_active ON device_tokens(is_active);
-CREATE INDEX IF NOT EXISTS idx_device_tokens_platform ON device_tokens(platform);
+-- Indexes for efficient querying
+CREATE INDEX IF NOT EXISTS idx_notification_queue_status ON notification_queue(status);
+CREATE INDEX IF NOT EXISTS idx_notification_queue_created_at ON notification_queue(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_notification_queue_type ON notification_queue(type);
+CREATE INDEX IF NOT EXISTS idx_notification_queue_priority ON notification_queue(priority);
+CREATE INDEX IF NOT EXISTS idx_notification_queue_thread_id ON notification_queue(thread_id);
+CREATE INDEX IF NOT EXISTS idx_notification_queue_expires_at ON notification_queue(expires_at);
 
--- RLS policy for device_tokens
-ALTER TABLE device_tokens ENABLE ROW LEVEL SECURITY;
+-- RLS policy for notification_queue
+ALTER TABLE notification_queue ENABLE ROW LEVEL SECURITY;
 DO $$ 
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'device_tokens' AND policyname = 'Allow all operations on device_tokens') THEN
-    CREATE POLICY "Allow all operations on device_tokens" ON device_tokens FOR ALL USING (true);
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'notification_queue' AND policyname = 'Allow all operations on notification_queue') THEN
+    CREATE POLICY "Allow all operations on notification_queue" ON notification_queue FOR ALL USING (true);
   END IF;
 END $$;
 
