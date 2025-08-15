@@ -161,3 +161,30 @@ BEGIN
   END IF;
 END $$;
 
+-- Device tokens for Apple Push Notifications (APNs)
+CREATE TABLE IF NOT EXISTS device_tokens (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  device_token TEXT NOT NULL UNIQUE,
+  user_id TEXT DEFAULT 'default_user',
+  platform TEXT NOT NULL DEFAULT 'ios', -- 'ios' or 'android'
+  device_info JSONB DEFAULT '{}', -- Device model, OS version, etc.
+  registered_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  last_used_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  is_active BOOLEAN DEFAULT TRUE,
+  UNIQUE(device_token)
+);
+
+-- Indexes for device tokens
+CREATE INDEX IF NOT EXISTS idx_device_tokens_user_id ON device_tokens(user_id);
+CREATE INDEX IF NOT EXISTS idx_device_tokens_is_active ON device_tokens(is_active);
+CREATE INDEX IF NOT EXISTS idx_device_tokens_platform ON device_tokens(platform);
+
+-- RLS policy for device_tokens
+ALTER TABLE device_tokens ENABLE ROW LEVEL SECURITY;
+DO $$ 
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'device_tokens' AND policyname = 'Allow all operations on device_tokens') THEN
+    CREATE POLICY "Allow all operations on device_tokens" ON device_tokens FOR ALL USING (true);
+  END IF;
+END $$;
+

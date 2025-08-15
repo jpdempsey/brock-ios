@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { supabase } from '@/lib/supabase/client'
 import { openai } from '@/lib/openai/client'
 import { BrockMemorySystem } from '@/lib/memory'
+import { apnsClient } from '@/lib/apns/client'
 import { successResponse, errorResponse, handleAPIError } from '@/lib/utils/response'
 
 export const runtime = 'edge'
@@ -66,14 +67,19 @@ export async function POST(request: NextRequest) {
       .update({ updated_at: new Date().toISOString() })
       .eq('id', threadId)
 
+    // Send push notification to all registered devices
+    const notificationResult = await sendPushNotification(threadId, message, timeOfDay)
+
     console.log(`✅ Sent proactive ${timeOfDay} check-in message to thread ${threadId}`)
     console.log(`📝 Message: ${message.substring(0, 100)}...`)
+    console.log(`📱 Push notification result: ${notificationResult.success ? 'sent' : 'failed'}`)
 
     return successResponse({
       message: 'Proactive check-in message sent successfully',
       threadId,
       timeOfDay,
-      content: message
+      content: message,
+      pushNotification: notificationResult
     })
 
   } catch (error) {
@@ -236,4 +242,48 @@ Morning: "Good morning! 🌅 I noticed you crushed that workout yesterday - how 
 Afternoon: "Hey! How's your day going so far? 💪 I'm curious - did you get that strength session in, or are you planning it for later?"
 
 Generate a personalized ${timeOfDay} check-in message now:`
+}
+
+// Send push notification for proactive message
+async function sendPushNotification(threadId: string, message: string, timeOfDay: string): Promise<{success: boolean, deviceCount?: number, sentCount?: number, error?: string}> {
+  try {
+    // Get active device tokens
+    const { data: devices, error } = await supabase
+      .from('device_tokens')
+      .select('device_token')
+      .eq('is_active', true)
+    
+    if (error) {
+      return { success: false, error: error.message }
+    }
+    
+    if (!devices || devices.length === 0) {
+      console.log('📱 No active devices found for push notifications')
+      return { success: true, deviceCount: 0, sentCount: 0 }
+    }
+    
+    // Create notification data
+    const notificationData = {
+      type: 'proactive_checkin' as const,
+      title: timeOfDay === 'morning' ? '🌅 Morning Check-in' : '🌇 Afternoon Check-in',
+      body: message,
+      threadId,
+      sound: 'default',
+      badge: 1
+    }
+    
+    // Send to all devices
+    const deviceTokens = devices.map(device => device.device_token)
+    const sentCount = await apnsClient.sendToMultipleDevices(deviceTokens, notificationData)
+    
+    return { 
+      success: true, 
+      deviceCount: deviceTokens.length, 
+      sentCount 
+    }
+    
+  } catch (error) {
+    console.error('Error sending push notification:', error)
+    return { success: false, error: String(error) }
+  }
 }

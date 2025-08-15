@@ -12,6 +12,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
     "next": "14.0.4",
+    "node-apn": "^3.0.0",
     "openai": "^4.24.1",
     "react": "^18",
     "react-dom": "^18",
@@ -26,4 +27,3 @@
     "typescript": "^5"
   }
 }
-
