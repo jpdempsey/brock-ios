@@ -4,9 +4,12 @@ import { successResponse, errorResponse, handleAPIError } from '@/lib/utils/resp
 
 export const runtime = 'edge'
 
-// GET /api/checkins/generate-schedule - Test endpoint (shows info without generating)
-export async function GET() {
+// GET /api/checkins/generate-schedule - Test endpoint (shows info, optionally generates with ?test=true)
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url)
+    const testMode = searchParams.get('test') === 'true'
+    
     const now = new Date()
     const etDate = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}))
     const dateString = etDate.toISOString().split('T')[0]
@@ -18,12 +21,41 @@ export async function GET() {
       .eq('date', dateString)
       .single()
     
+    // If test mode and no existing schedule, generate one
+    if (testMode && !existing) {
+      const morningTime = generateRandomTime(7, 30, 10, 30) // 7:30-10:30 AM
+      const afternoonTime = generateRandomTime(15, 0, 20, 0) // 3:00-8:00 PM
+
+      const { data: newSchedule, error } = await supabase
+        .from('daily_checkin_schedule')
+        .insert({
+          date: dateString,
+          morning_time: morningTime,
+          afternoon_time: afternoonTime,
+          morning_sent: false,
+          afternoon_sent: false,
+          timezone: 'America/New_York'
+        })
+        .select()
+        .single()
+
+      if (!error) {
+        return successResponse({
+          message: 'TEST: Generated new schedule successfully!',
+          currentDate: dateString,
+          currentTimeET: etDate.toLocaleString("en-US", {timeZone: "America/New_York"}),
+          generatedSchedule: newSchedule,
+          note: 'This was generated via GET ?test=true parameter'
+        })
+      }
+    }
+    
     return successResponse({
-      message: 'Schedule generation endpoint (use POST to generate)',
+      message: 'Schedule generation endpoint',
       currentDate: dateString,
       currentTimeET: etDate.toLocaleString("en-US", {timeZone: "America/New_York"}),
       existingSchedule: existing || null,
-      note: 'Use POST with Authorization header to generate schedule'
+      note: testMode ? 'Test mode - but schedule already exists' : 'Add ?test=true to generate a test schedule, or use POST with Authorization header'
     })
   } catch (error) {
     return handleAPIError(error)
