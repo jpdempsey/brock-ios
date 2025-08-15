@@ -105,7 +105,11 @@ async function findOrCreateGeneralCheckinThread(): Promise<{success: boolean, th
         title: 'Daily Check-ins',
         topic: 'Daily accountability and progress check-ins',
         summary: 'Thread for proactive daily check-ins from Brock',
-        flags: { is_general_checkin: true }
+        flags: { 
+          is_general_checkin: true,
+          icon: 'clock.badge.checkmark',
+          icon_color: 'green'
+        }
       })
       .select('id')
       .single()

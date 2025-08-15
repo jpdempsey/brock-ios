@@ -85,7 +85,11 @@ export async function POST(request: NextRequest) {
         title,
         topic,
         summary,
-        flags: { is_general_checkin: true }
+        flags: { 
+          is_general_checkin: true,
+          icon: 'clock.badge.checkmark',
+          icon_color: 'green'
+        }
       })
       .select('*')
       .single()
