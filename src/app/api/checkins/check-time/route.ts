@@ -4,6 +4,33 @@ import { successResponse, errorResponse, handleAPIError } from '@/lib/utils/resp
 
 export const runtime = 'edge'
 
+// GET /api/checkins/check-time - Test endpoint (shows current time and schedule info)
+export async function GET() {
+  try {
+    const now = new Date()
+    const etDateTime = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}))
+    const dateString = etDateTime.toISOString().split('T')[0]
+    const currentTime = etDateTime.toTimeString().split(' ')[0]
+
+    // Get today's schedule
+    const { data: schedule } = await supabase
+      .from('daily_checkin_schedule')
+      .select('*')
+      .eq('date', dateString)
+      .single()
+
+    return successResponse({
+      message: 'Time checking endpoint (use POST to actually check)',
+      currentDate: dateString,
+      currentTimeET: currentTime,
+      schedule: schedule || null,
+      note: 'Use POST with Authorization header to perform time check'
+    })
+  } catch (error) {
+    return handleAPIError(error)
+  }
+}
+
 // POST /api/checkins/check-time - Check if it's time for a proactive check-in (Vercel cron: every 15 minutes)
 export async function POST(request: NextRequest) {
   try {

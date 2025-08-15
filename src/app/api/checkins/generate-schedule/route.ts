@@ -4,6 +4,32 @@ import { successResponse, errorResponse, handleAPIError } from '@/lib/utils/resp
 
 export const runtime = 'edge'
 
+// GET /api/checkins/generate-schedule - Test endpoint (shows info without generating)
+export async function GET() {
+  try {
+    const now = new Date()
+    const etDate = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}))
+    const dateString = etDate.toISOString().split('T')[0]
+    
+    // Check if schedule exists for today
+    const { data: existing } = await supabase
+      .from('daily_checkin_schedule')
+      .select('*')
+      .eq('date', dateString)
+      .single()
+    
+    return successResponse({
+      message: 'Schedule generation endpoint (use POST to generate)',
+      currentDate: dateString,
+      currentTimeET: etDate.toLocaleString("en-US", {timeZone: "America/New_York"}),
+      existingSchedule: existing || null,
+      note: 'Use POST with Authorization header to generate schedule'
+    })
+  } catch (error) {
+    return handleAPIError(error)
+  }
+}
+
 // POST /api/checkins/generate-schedule - Generate daily check-in schedule (Vercel cron: daily at 1AM ET)
 export async function POST(request: NextRequest) {
   try {
