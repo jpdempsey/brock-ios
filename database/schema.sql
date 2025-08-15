@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS chat_threads (
   title TEXT NOT NULL,
   topic TEXT, -- e.g., "Strength block", "Macros tuning"
   summary TEXT, -- Rolling summary updated every 10-20 messages
+  flags JSONB DEFAULT '{}', -- Thread flags like {"is_general_checkin": true}
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -77,11 +78,28 @@ ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE nutrition_entries ENABLE ROW LEVEL SECURITY;
 
 -- Simple policies for personal use (allow all operations)
-CREATE POLICY "Allow all operations on goals" ON goals FOR ALL USING (true);
-CREATE POLICY "Allow all operations on activities" ON activities FOR ALL USING (true);
-CREATE POLICY "Allow all operations on chat_threads" ON chat_threads FOR ALL USING (true);
-CREATE POLICY "Allow all operations on chat_messages" ON chat_messages FOR ALL USING (true);
-CREATE POLICY "Allow all operations on nutrition_entries" ON nutrition_entries FOR ALL USING (true);
+DO $$ 
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'goals' AND policyname = 'Allow all operations on goals') THEN
+    CREATE POLICY "Allow all operations on goals" ON goals FOR ALL USING (true);
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'activities' AND policyname = 'Allow all operations on activities') THEN
+    CREATE POLICY "Allow all operations on activities" ON activities FOR ALL USING (true);
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'chat_threads' AND policyname = 'Allow all operations on chat_threads') THEN
+    CREATE POLICY "Allow all operations on chat_threads" ON chat_threads FOR ALL USING (true);
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'chat_messages' AND policyname = 'Allow all operations on chat_messages') THEN
+    CREATE POLICY "Allow all operations on chat_messages" ON chat_messages FOR ALL USING (true);
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'nutrition_entries' AND policyname = 'Allow all operations on nutrition_entries') THEN
+    CREATE POLICY "Allow all operations on nutrition_entries" ON nutrition_entries FOR ALL USING (true);
+  END IF;
+END $$;
 
 -- Simplified Strava Configuration (single user)
 CREATE TABLE IF NOT EXISTS strava_config (
@@ -112,5 +130,34 @@ CREATE INDEX IF NOT EXISTS idx_activities_strava_id ON activities(strava_id);
 
 -- RLS policy for strava_config
 ALTER TABLE strava_config ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow all operations on strava_config" ON strava_config FOR ALL USING (true);
+DO $$ 
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'strava_config' AND policyname = 'Allow all operations on strava_config') THEN
+    CREATE POLICY "Allow all operations on strava_config" ON strava_config FOR ALL USING (true);
+  END IF;
+END $$;
+
+-- Proactive Check-in Scheduling
+CREATE TABLE IF NOT EXISTS daily_checkin_schedule (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  date DATE NOT NULL UNIQUE,
+  morning_time TIME NOT NULL, -- Random between 7:30-10:30 AM ET
+  afternoon_time TIME NOT NULL, -- Random between 3-8 PM ET
+  morning_sent BOOLEAN DEFAULT FALSE,
+  afternoon_sent BOOLEAN DEFAULT FALSE,
+  timezone TEXT DEFAULT 'America/New_York', -- ET timezone
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Index for efficient date lookups
+CREATE INDEX IF NOT EXISTS idx_daily_checkin_schedule_date ON daily_checkin_schedule(date);
+
+-- RLS policy for daily_checkin_schedule
+ALTER TABLE daily_checkin_schedule ENABLE ROW LEVEL SECURITY;
+DO $$ 
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'daily_checkin_schedule' AND policyname = 'Allow all operations on daily_checkin_schedule') THEN
+    CREATE POLICY "Allow all operations on daily_checkin_schedule" ON daily_checkin_schedule FOR ALL USING (true);
+  END IF;
+END $$;
 

@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/checkins/generate-schedule",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/checkins/check-time",
+      "schedule": "*/15 * * * *"
+    }
+  ]
+}
