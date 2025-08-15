@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       case 'proactive':
       case 'checkin':
         success = await NotificationService.createProactiveCheckinNotification(
-          'test-thread-id',
+          '550e8400-e29b-41d4-a716-446655440000', // Valid UUID format
           message || 'Hey! This is a test proactive check-in. How are you doing today? 💪',
           'afternoon'
         )
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
 
       case 'chat':
         success = await NotificationService.createChatNotification(
-          'test-thread-id',
+          '550e8400-e29b-41d4-a716-446655440001', // Valid UUID format
           'Test Chat',
           message || 'This is a test chat message from Brock! 🤖'
         )
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
           title || 'New Activity Added',
           message || 'Your morning run has been synced from Strava! 🏃‍♂️',
           'activity',
-          'test-activity-id'
+          '550e8400-e29b-41d4-a716-446655440002' // Valid UUID format
         )
         notificationData = {
           type: 'account_update',
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
       case 'goal':
       case 'reminder':
         success = await NotificationService.createGoalReminderNotification(
-          'test-goal-id',
+          '550e8400-e29b-41d4-a716-446655440003', // Valid UUID format
           'Complete 5K Run',
           message || 'Don\'t forget about your 5K goal! You\'re doing great! 🎯'
         )
